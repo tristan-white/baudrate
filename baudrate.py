@@ -91,7 +91,15 @@ class Baudrate:
 
     def _print(self, data):
         if self.verbose:
-            sys.stderr.write(data)
+            data_clean = data[2:-1]
+            newline = False
+            if "\\r" in data_clean or "\\n" in data_clean:
+                newline = True
+            data_clean = data_clean.replace("\\r", "").replace("\\n", "").replace("\\x00", "")
+            sys.stderr.write(data_clean)
+            if newline:
+                sys.stderr.write("\n\r")
+
 
     def Open(self):
         self.serial = serial.Serial(self.port, timeout=self.timeout)
@@ -144,7 +152,7 @@ class Baudrate:
                 else:
                     clear_counters = True
 
-                self._print(byte)
+                self._print(str(byte))
 
                 if count >= self.threshold and whitespace > 0 and punctuation > 0 and vowels > 0:
                     break
@@ -203,8 +211,8 @@ class Baudrate:
         if name is not None and name:
             try:
                 open("/etc/minicom/minirc.%s" % name, "w").write(config)
-            except Exception, e:
-                print "Error saving minicom config file:", str(e)
+            except Exception as e:
+                print ("Error saving minicom config file:", str(e))
                 success = False
 
         return (success, config)
@@ -223,21 +231,21 @@ if __name__ == '__main__':
     def usage():
         baud = Baudrate()
 
-        print ""
-        print "Baudrate v%s" % baud.VERSION
-        print "Craig Heffner, http://www.devttys0.com"
-        print ""
-        print "Usage: %s [OPTIONS]" % sys.argv[0]
-        print ""
-        print "\t-p <serial port>       Specify the serial port to use [/dev/ttyUSB0]"
-        print "\t-t <seconds>           Set the timeout period used when switching baudrates in auto detect mode [%d]" % baud.READ_TIMEOUT
-        print "\t-c <num>               Set the minimum ASCII character threshold used during auto detect mode [%d]" % baud.MIN_CHAR_COUNT
-        print "\t-n <name>              Save the resulting serial configuration as <name> and automatically invoke minicom (implies -a)"
-        print "\t-a                     Enable auto detect mode"
-        print "\t-b                     Display supported baud rates and exit"
-        print "\t-q                     Do not display data read from the serial port"
-        print "\t-h                     Display help"
-        print ""
+        print ("")
+        print ("Baudrate v%s" % baud.VERSION)
+        print ("Craig Heffner, http://www.devttys0.com")
+        print ("")
+        print ("Usage: %s [OPTIONS]" % sys.argv[0])
+        print ("")
+        print ("\t-p <serial port>       Specify the serial port to use [/dev/ttyUSB0]")
+        print ("\t-t <seconds>           Set the timeout period used when switching baudrates in auto detect mode [%d]" % baud.READ_TIMEOUT)
+        print ("\t-c <num>               Set the minimum ASCII character threshold used during auto detect mode [%d]" % baud.MIN_CHAR_COUNT)
+        print ("\t-n <name>              Save the resulting serial configuration as <name> and automatically invoke minicom (implies -a)")
+        print ("\t-a                     Enable auto detect mode")
+        print ("\t-b                     Display supported baud rates and exit")
+        print ("\t-q                     Do not display data read from the serial port")
+        print ("\t-h                     Display help")
+        print ("")
         sys.exit(1)
 
     def main():
@@ -252,8 +260,8 @@ if __name__ == '__main__':
 
         try:
             (opts, args) = GetOpt(sys.argv[1:], 'p:t:c:n:abqh')
-        except GetoptError, e:
-            print e
+        except GetoptError as e:
+            print (e)
             usage()
 
         for opt, arg in opts:
@@ -279,43 +287,44 @@ if __name__ == '__main__':
         baud = Baudrate(port, threshold=threshold, timeout=timeout, name=name, verbose=verbose, auto=auto)
 
         if display:
-            print ""
+            print ("")
             for rate in baud.BAUDRATES:
-                print "\t%s" % rate
-            print ""
+                pass
+                print ("\t%s" % rate)
+            print ("")
         else:
-            print ""
-            print "Starting baudrate detection on %s, turn on your serial device now." % port
-            print "Press Ctl+C to quit."
-            print ""
+            print ("")
+            print ("Starting baudrate detection on %s, turn on your serial device now." % port)
+            print ("Press Ctl+C to quit.")
+            print ("")
 
             baud.Open()
 
             try:
                 rate = baud.Detect()
-                print "\nDetected baudrate: %s" % rate
+                print ("\nDetected baudrate: %s" % rate)
 
                 if name is None:
-                    print "\nSave minicom configuration as: ",
+                    print ("\nSave minicom configuration as: ",)
                     name = sys.stdin.readline().strip()
-                    print ""
+                    print ("")
 
                 (ok, config) = baud.MinicomConfig(name)
                 if name and name is not None:
                     if ok:
                         if not run:
-                            print "Configuration saved. Run minicom now [n/Y]? ",
+                            print ("Configuration saved. Run minicom now [n/Y]? ")
                             yn = sys.stdin.readline().strip()
-                            print ""
+                            print ("")
                             if yn == "" or yn.lower().startswith('y'):
                                 run = True
 
                         if run:
                             subprocess.call(["minicom", name])
                     else:
-                        print config
+                        print (config)
                 else:
-                    print config
+                    print (config)
             except KeyboardInterrupt:
                 pass
 
